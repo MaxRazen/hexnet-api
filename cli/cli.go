@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/fatih/color"
 	"golang.org/x/term"
 	"hexnet/api/common"
 	"hexnet/api/users"
@@ -91,6 +92,13 @@ func helpHandler() {
 
 func makeUserHandler(data users.UserCreateData) {
 	interactWithDb()
+	common.RegisterCustomValidationRules()
+
+	if err := common.GetValidator().Struct(data); err != nil {
+		printValidationError(err)
+		return
+	}
+
 	m, err := users.CreateUserAction(data)
 
 	if err != nil {
@@ -132,4 +140,13 @@ func stringPrompt(label string, hidden bool) string {
 func interactWithDb() {
 	config := common.LoadConfig("")
 	common.InitDbConnection(config.Env.DB)
+}
+
+func printValidationError(err error) {
+	errData := common.NewValidationError(err)
+	color.Red("Fatal: " + errData.Message)
+
+	for _, field := range errData.Errors {
+		color.Red("\t%v: %v\n", field.Field, field.Message)
+	}
 }

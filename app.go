@@ -11,6 +11,7 @@ import (
 func main() {
 	config := common.LoadConfig("")
 	common.InitDbConnection(config.Env.DB)
+	common.RegisterCustomValidationRules()
 	migrate()
 
 	server := gin.Default()

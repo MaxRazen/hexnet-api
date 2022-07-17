@@ -1,33 +1,31 @@
 package users
 
 import (
-	"github.com/go-playground/validator/v10"
 	"hexnet/api/common"
 )
 
 type UserCreateData struct {
-	Name string `validate:"required,min=2,max=32"`
-	// TODO: solve the issue with regexp=^([-.a-zA-Z0-9]+)$"
-	Login    string `validate:"required,min=4,max=32"`
-	Password string `validate:"required,min=6,max=128"`
+	Name     string `binding:"required,min=2,max=32"`
+	Login    string `binding:"required,login,min=4,max=32"`
+	Password string `binding:"required,min=6,max=128"`
+}
+
+type UserAuthorizeData struct {
+	Login    string `validate:"required"`
+	Password string `validate:"required"`
+}
+
+type UserAuthorizePayload struct {
+	Jwt string `json:"jwt"`
 }
 
 func CreateUserAction(data UserCreateData) (*UserModel, error) {
-	var err error
-
-	if err = common.GetValidator().Struct(data); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			return nil, err.(validator.ValidationErrors)
-		}
-		return nil, err
-	}
-
 	model := UserModel{
 		Name:  data.Name,
 		Login: data.Login,
 	}
 
-	if err = model.setPassword(data.Password); err != nil {
+	if err := model.setPassword(data.Password); err != nil {
 		return nil, err
 	}
 

@@ -35,13 +35,11 @@ func TestCreateUserAction(t *testing.T) {
 	data.Password = ""
 	_, err = CreateUserAction(data)
 	asserts.Error(err, "User created with invalid data")
-	asserts.True(common.IsValidationError(err), "The error type must be validation error")
 }
 
 func TestUserModel(t *testing.T) {
 	asserts := assert.New(t)
 
-	// Testing UserModel's password feature
 	userModel := newUserModel()
 	err := userModel.setPassword("pa$w0rd")
 

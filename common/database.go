@@ -3,6 +3,7 @@ package common
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -17,7 +18,9 @@ func InitDbConnection(dbConfig DbConfig) *gorm.DB {
 		panic("Fatal: DB Connection is not supported: " + dbConfig.connection)
 	}
 
-	db, err := gorm.Open(connection, &gorm.Config{})
+	db, err := gorm.Open(connection, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 
 	if err != nil {
 		panic("Fatal: DB Connection could not be established: " + err.Error())
