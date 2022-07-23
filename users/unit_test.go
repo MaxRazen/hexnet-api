@@ -45,8 +45,8 @@ func TestUserModel(t *testing.T) {
 
 	asserts.NoError(err, "Setting password should not return an error")
 	asserts.NotEmpty(userModel.PasswordHash, "Empty password hash should not be empty")
-	asserts.True(userModel.checkPassword("pa$w0rd"), "Password must match with hash")
-	asserts.False(userModel.checkPassword("password"), "Match of different password must return false")
+	asserts.True(VerifyPassword("pa$w0rd", userModel.PasswordHash), "Password must match with hash")
+	asserts.False(VerifyPassword("password", userModel.PasswordHash), "Match of different password must return false")
 
 	err = userModel.setPassword("")
 	asserts.Error(err, "Setting empty password must return an error")

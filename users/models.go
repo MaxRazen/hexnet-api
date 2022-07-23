@@ -52,7 +52,7 @@ func (user *UserModel) setPassword(password string) error {
 	return nil
 }
 
-func (user *UserModel) checkPassword(password string) bool {
-	matched, err := hasher.VerifyHash(password, user.PasswordHash)
+func VerifyPassword(password, hash string) bool {
+	matched, err := hasher.VerifyHash(password, hash)
 	return matched && err == nil
 }

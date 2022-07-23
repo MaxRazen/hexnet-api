@@ -2,35 +2,17 @@ package users
 
 import (
 	"github.com/gin-gonic/gin"
-	"hexnet/api/common"
 	"net/http"
 )
 
-type AuthorizeRequestData struct {
-	Login    string `json:"login" binding:"required,login,min=4"`
-	Password string `json:"password" binding:"required,min=6"`
+func Routes(router *gin.RouterGroup) {
+	router.GET("/me", meHandler)
 }
 
-func UserAuthRoutes(router *gin.RouterGroup) {
-	router.POST("/authorize", routeAuthorize)
-}
-
-func routeAuthorize(c *gin.Context) {
-	data := &AuthorizeRequestData{}
-
-	if err := c.ShouldBindJSON(&data); err != nil {
-		if common.IsValidationError(err) {
-			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, common.NewValidationError(err))
-		}
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	payload := struct {
-		Success  bool   `json:"success"`
-		Login    string `json:"login"`
-		Password string `json:"password"`
-	}{Success: true, Login: data.Login, Password: data.Password}
-
-	c.JSON(http.StatusOK, payload)
+func meHandler(c *gin.Context) {
+	jwtData, _ := c.Get("JWT_PAYLOAD")
+	c.JSON(http.StatusOK, gin.H{
+		"msg":       "hey, it's me",
+		"tokenData": jwtData,
+	})
 }

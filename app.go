@@ -3,23 +3,44 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"hexnet/api/auth"
 	"hexnet/api/common"
 	"hexnet/api/users"
 	"net/http"
 )
 
-func main() {
+func prepareApp() common.Config {
 	config := common.LoadConfig("")
 	common.InitDbConnection(config.Env.DB)
 	common.RegisterCustomValidationRules()
 	migrate()
 
-	server := gin.Default()
+	return config
+}
+
+func setupServer() (server *gin.Engine) {
+	server = gin.Default()
 
 	server.GET("/", pingHandler)
 	apiRoutes := server.Group("/api")
-	users.UserAuthRoutes(apiRoutes.Group("/auth"))
 
+	// Auth Module
+	auth.Routes(apiRoutes.Group("/auth"))
+	authMiddleware := auth.NewAuthMiddleware()
+
+	{ // Users Module
+		usersRouteGroup := apiRoutes.Group("/users")
+		usersRouteGroup.Use(authMiddleware.MiddlewareFunc())
+		users.Routes(usersRouteGroup)
+	}
+
+	return server
+}
+
+func main() {
+	config := prepareApp()
+
+	server := setupServer()
 	err := server.Run(config.Env.ServerHost + ":" + config.Env.ServerPort)
 
 	if err != nil {
@@ -34,13 +55,8 @@ func migrate() {
 }
 
 func pingHandler(c *gin.Context) {
-	payload := struct {
-		Path   string `json:"path"`
-		Result string `json:"result"`
-	}{
-		Path:   c.Request.RequestURI,
-		Result: "PONG!",
-	}
-
-	c.IndentedJSON(http.StatusOK, payload)
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"path":   c.Request.RequestURI,
+		"result": "PONG!",
+	})
 }

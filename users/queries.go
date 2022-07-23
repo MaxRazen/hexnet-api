@@ -1,5 +1,22 @@
 package users
 
+import (
+	"errors"
+	"hexnet/api/common"
+)
+
+func FindByLogin(login string) (*UserModel, error) {
+	var model *UserModel
+
+	common.GetDB().Where("login = ?", login).First(&model)
+
+	if model == nil {
+		return nil, errors.New("user not found")
+	}
+
+	return model, nil
+}
+
 /*
 func FindOne(condition interface{}) (*UserModel, error) {
 	db := common.GetDB()

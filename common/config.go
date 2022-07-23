@@ -3,16 +3,22 @@ package common
 import (
 	"github.com/joho/godotenv"
 	"os"
+	"strconv"
 )
 
-const EnvServerHost = "SERVER_HOST"
-const EnvServerPort = "SERVER_PORT"
-const EnvDbConnection = "DB_CONNECTION"
-const EnvDbHost = "DB_HOST"
-const EnvDbDatabase = "DB_DATABASE"
-const EnvDbUsername = "DB_USERNAME"
-const EnvDbPassword = "DB_PASSWORD"
-const EnvDbPath = "DB_PATH"
+const (
+	EnvServerHost   = "SERVER_HOST"
+	EnvServerPort   = "SERVER_PORT"
+	EnvDbConnection = "DB_CONNECTION"
+	EnvDbHost       = "DB_HOST"
+	EnvDbDatabase   = "DB_DATABASE"
+	EnvDbUsername   = "DB_USERNAME"
+	EnvDbPassword   = "DB_PASSWORD"
+	EnvDbPath       = "DB_PATH"
+	EnvAuthTimeout  = "AUTH_TIMEOUT"
+	EnvAuthSecret   = "AUTH_SECRET"
+	EnvAuthRefresh  = "AUTH_REFRESH_TTL"
+)
 
 var config Config
 
@@ -25,8 +31,15 @@ type DbConfig struct {
 	path       string
 }
 
+type AuthConfig struct {
+	Secret  string
+	Timeout int
+	Refresh int
+}
+
 type AppEnv struct {
 	DB         DbConfig
+	Auth       AuthConfig
 	ServerHost string
 	ServerPort string
 }
@@ -51,7 +64,7 @@ func LoadConfig(envPath string) Config {
 		AppName: "hexnet/api",
 		Env: AppEnv{
 			ServerHost: os.Getenv(EnvServerHost),
-			ServerPort: resolveServerPort(),
+			ServerPort: resolveStr(os.Getenv(EnvServerPort), "8080"),
 			DB: DbConfig{
 				connection: os.Getenv(EnvDbConnection),
 				host:       os.Getenv(EnvDbHost),
@@ -59,6 +72,11 @@ func LoadConfig(envPath string) Config {
 				username:   os.Getenv(EnvDbUsername),
 				password:   os.Getenv(EnvDbPassword),
 				path:       os.Getenv(EnvDbPath),
+			},
+			Auth: AuthConfig{
+				Secret:  os.Getenv(EnvAuthSecret),
+				Refresh: resolveInt(os.Getenv(EnvAuthRefresh), 60),
+				Timeout: resolveInt(os.Getenv(EnvAuthTimeout), 15),
 			},
 		},
 	}
@@ -70,10 +88,20 @@ func GetConfig() Config {
 	return config
 }
 
-func resolveServerPort() string {
-	port := os.Getenv(EnvServerPort)
-	if port == "" {
-		return "8080"
+func resolveStr(str, def string) string {
+	if str == "" {
+		return def
 	}
-	return port
+	return str
+}
+
+func resolveInt(str string, def int) int {
+	if str == "" {
+		return def
+	}
+	v, e := strconv.Atoi(str)
+	if e != nil {
+		return def
+	}
+	return v
 }
