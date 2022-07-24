@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"hexnet/api/auth"
 	"hexnet/api/common"
+	"hexnet/api/notes"
 	"hexnet/api/users"
 	"net/http"
 	"net/http/httptest"
@@ -107,20 +108,23 @@ var usersMeEndpointTests = []struct {
 	responseData string
 	getToken     func() string
 }{
+	// unauthorized request
 	{
 		path:         "/api/users/me",
 		expectedCode: http.StatusUnauthorized,
 		getToken:     func() string { return "" },
 	},
-	{
-		path:         "/api/users/me",
-		expectedCode: http.StatusOK,
-		getToken:     func() string { return getAuthorizeToken() },
-	},
+	// request with bad auth token
 	{
 		path:         "/api/users/me",
 		expectedCode: http.StatusUnauthorized,
 		getToken:     func() string { return "bad-token" },
+	},
+	// successful authorized request
+	{
+		path:         "/api/users/me",
+		expectedCode: http.StatusOK,
+		getToken:     func() string { return getAuthorizeToken() },
 	},
 }
 
@@ -140,6 +144,82 @@ func TestUsersMeEndpoint(t *testing.T) {
 
 		asserts.NoError(err)
 		asserts.Equal(testCase.expectedCode, w.Code)
+	}
+}
+
+var notesEndpointsTest = []struct {
+	path         string
+	method       string
+	expectedCode int
+	requestBody  string
+	responseData string
+	authorized   bool
+}{
+	// unauthorized request
+	{
+		path:         "/api/notes",
+		method:       http.MethodPost,
+		expectedCode: http.StatusUnauthorized,
+		requestBody:  "",
+		responseData: `{"code":401,"message":"auth header is empty"}`,
+		authorized:   false,
+	},
+	// request with bad payload
+	{
+		path:         "/api/notes",
+		method:       http.MethodPost,
+		expectedCode: http.StatusBadRequest,
+		requestBody:  `-`,
+		responseData: "",
+		authorized:   true,
+	},
+	// validation error
+	{
+		path:         "/api/notes",
+		method:       http.MethodPost,
+		expectedCode: http.StatusUnprocessableEntity,
+		requestBody:  `{"note":"text","title":"-"}`,
+		responseData: `{"message":"Validation error","errors":[{"field":"title","message":"length"},{"field":"content","message":"required"}]}`,
+		authorized:   true,
+	},
+	// successful request
+	{
+		path:         "/api/notes",
+		method:       http.MethodPost,
+		expectedCode: http.StatusCreated,
+		requestBody:  `{"title":"::title::","content":"::content::"}`,
+		responseData: `{"id":1,"title":"::title::","content":"::content::"}`,
+		authorized:   true,
+	},
+}
+
+func TestNotesEndpoints(t *testing.T) {
+	prepareAppForTest()
+	asserts := assert.New(t)
+
+	for _, testCase := range notesEndpointsTest {
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest(testCase.method, testCase.path, bytes.NewBufferString(testCase.requestBody))
+		req.Header.Set("Content-Type", "application/json")
+		if testCase.authorized {
+			req.Header.Set("Authorization", "Bearer "+getAuthorizeToken())
+		}
+		server.ServeHTTP(w, req)
+
+		asserts.NoError(err)
+		asserts.Equal(testCase.expectedCode, w.Code)
+		if testCase.expectedCode == http.StatusCreated {
+			d := &notes.NoteModel{}
+			r := &notes.NoteModel{}
+			_ = json.Unmarshal(w.Body.Bytes(), d)
+			_ = json.Unmarshal(w.Body.Bytes(), r)
+			asserts.NotEmpty(r.CreatedAt)
+			asserts.Equal(r.CreatedAt, r.UpdatedAt)
+			d.CreatedAt, d.UpdatedAt = r.CreatedAt, r.UpdatedAt
+			asserts.Equal(d, r)
+		} else {
+			asserts.Equal(testCase.responseData, w.Body.String())
+		}
 	}
 }
 

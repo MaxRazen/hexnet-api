@@ -30,6 +30,7 @@ func authorizeHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&data); err != nil {
 		if common.IsValidationError(err) {
 			c.AbortWithStatusJSON(http.StatusUnprocessableEntity, common.NewValidationError(err))
+			return
 		}
 		c.AbortWithStatus(http.StatusBadRequest)
 		return

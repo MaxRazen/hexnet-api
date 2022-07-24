@@ -14,29 +14,6 @@ func newUserModel() UserModel {
 	}
 }
 
-func TestCreateUserAction(t *testing.T) {
-	asserts := assert.New(t)
-	common.InitTestDbConnection()
-	AutoMigrate()
-
-	data := UserCreateData{
-		Name:     "John Dou",
-		Login:    "j.dou",
-		Password: "pa$$w0rd",
-	}
-
-	model, err := CreateUserAction(data)
-
-	asserts.NotEmpty(model.ID, "User ID was not assigned")
-	asserts.NoError(err, "Error due creating user")
-
-	data.Name = "1"
-	data.Login = "$"
-	data.Password = ""
-	_, err = CreateUserAction(data)
-	asserts.Error(err, "User created with invalid data")
-}
-
 func TestUserModel(t *testing.T) {
 	asserts := assert.New(t)
 
@@ -50,4 +27,29 @@ func TestUserModel(t *testing.T) {
 
 	err = userModel.setPassword("")
 	asserts.Error(err, "Setting empty password must return an error")
+}
+
+func TestCreateUserAction(t *testing.T) {
+	asserts := assert.New(t)
+	common.InitTestDbConnection()
+	AutoMigrate()
+
+	data := UserCreateData{
+		Name:     "John Dou",
+		Login:    "j.dou",
+		Password: "pa$$w0rd",
+	}
+
+	model, err := CreateUserAction(data)
+
+	asserts.NoError(err, "Error due creating a user")
+	asserts.NotEmpty(model.ID, "User ID was not assigned")
+	asserts.NotEmpty(model.CreatedAt, "Create At must be filled in the model")
+	asserts.Equal(model.CreatedAt, model.UpdatedAt, "Timestamp fields should match after creating")
+
+	data.Name = "1"
+	data.Login = "$"
+	data.Password = ""
+	_, err = CreateUserAction(data)
+	asserts.Error(err, "User created with invalid data")
 }

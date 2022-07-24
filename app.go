@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"hexnet/api/auth"
 	"hexnet/api/common"
+	"hexnet/api/notes"
 	"hexnet/api/users"
 	"net/http"
 )
@@ -26,12 +27,17 @@ func setupServer() (server *gin.Engine) {
 
 	// Auth Module
 	auth.Routes(apiRoutes.Group("/auth"))
-	authMiddleware := auth.NewAuthMiddleware()
+	authMiddleware := auth.NewAuthMiddleware().MiddlewareFunc()
 
 	{ // Users Module
 		usersRouteGroup := apiRoutes.Group("/users")
-		usersRouteGroup.Use(authMiddleware.MiddlewareFunc())
+		usersRouteGroup.Use(authMiddleware)
 		users.Routes(usersRouteGroup)
+	}
+	{ // Notes Module
+		notesRouteGroup := apiRoutes.Group("/notes")
+		notesRouteGroup.Use(authMiddleware)
+		notes.Routes(notesRouteGroup)
 	}
 
 	return server
@@ -52,6 +58,7 @@ func main() {
 
 func migrate() {
 	users.AutoMigrate()
+	notes.AutoMigrate()
 }
 
 func pingHandler(c *gin.Context) {
