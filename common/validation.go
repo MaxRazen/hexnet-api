@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"regexp"
@@ -9,8 +10,9 @@ import (
 )
 
 const (
-	ParamLength = "length"
-	ParamFormat = "format"
+	ParamLength   = "length"
+	ParamFormat   = "format"
+	ParamRequired = "required"
 )
 
 type ErrorMsg struct {
@@ -65,6 +67,12 @@ func NewValidationError(err error) ValidationError {
 	}
 }
 
+func NotFoundErrorResponse() map[string]any {
+	return gin.H{
+		"message": "The record with given ID not found",
+	}
+}
+
 func mapValidationParam(param string) string {
 	switch param {
 	case "min":
@@ -73,7 +81,8 @@ func mapValidationParam(param string) string {
 		return ParamLength
 	case "login":
 		return ParamFormat
-
+	case "required_without":
+		return ParamRequired
 	}
 	return param
 }
